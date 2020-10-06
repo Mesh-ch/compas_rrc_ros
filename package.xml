@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>compas_rrc_driver</name>
   <version>1.0.0</version>
   <description>COMPAS RRC: ROS Driver</description>
