@@ -17,6 +17,7 @@ RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F42ED6FBAB17C654
 RUN apt-get update && apt-get install -y \
     # Basic utilities
     iputils-ping \
+    python3-rosdep \
     # ROS bridge server and related packages
     ros-${ROS_DISTRO}-rosbridge-server \
     # The web republisher seems to be still on pre-release for noetic, so skip it
