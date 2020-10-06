@@ -19,7 +19,8 @@ RUN apt-get update && apt-get install -y \
     iputils-ping \
     # ROS bridge server and related packages
     ros-${ROS_DISTRO}-rosbridge-server \
-    ros-${ROS_DISTRO}-tf2-web-republisher \
+    # The web republisher seems to be still on pre-release for noetic, so skip it
+    # ros-${ROS_DISTRO}-tf2-web-republisher \
     --no-install-recommends \
     # Clear apt-cache to reduce image size
     && rm -rf /var/lib/apt/lists/*
