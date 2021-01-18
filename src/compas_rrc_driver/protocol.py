@@ -37,6 +37,10 @@ class WireProtocolVersion1(object):
         string_values = message.string_values
         float_values = message.float_values
 
+        # ASCII Encode strings
+        instruction = instruction.encode('ascii') if hasattr(instruction, 'encode') else instruction
+        feedback = feedback.encode('ascii') if hasattr(feedback, 'encode') else feedback
+
         # Build command
         payload_format = '3I{}s2I{}sI'.format(len(instruction), len(feedback))
         payload = [message.sequence_id, exec_level, len(instruction), instruction, feedback_level, len(feedback), feedback, feedback_id]
