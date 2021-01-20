@@ -109,6 +109,7 @@ class WireProtocolVersion1(object):
             cls.BYTE_ORDER + 'I', payload[start_pos:start_pos + 4])
         start_pos += 4
         feedback, = struct.unpack(cls.BYTE_ORDER + str(feedback_len) + 's', payload[start_pos:start_pos + feedback_len])
+        feedback = feedback.decode('ascii') if hasattr(feedback, 'decode') else feedback
         start_pos += feedback_len
 
         # Read feedback ID
