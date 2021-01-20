@@ -98,6 +98,7 @@ class WireProtocolVersion1(object):
 
         # Read instruction
         instruction, = struct.unpack(cls.BYTE_ORDER + str(instruction_len) + 's', payload[start_pos:start_pos + instruction_len])
+        instruction = instruction.decode('ascii') if hasattr(instruction, 'decode') else instruction
         start_pos += instruction_len
 
         # Read feedback message
@@ -125,6 +126,7 @@ class WireProtocolVersion1(object):
             str_len, = struct.unpack(cls.BYTE_ORDER + 'I', payload[start_pos:start_pos + 4])
             start_pos += 4
             string_value, = struct.unpack(cls.BYTE_ORDER + str(str_len) + 's', payload[start_pos:start_pos + str_len])
+            string_value = string_value.decode('ascii') if hasattr(string_value, 'decode') else string_value
             string_values.append(string_value)
             start_pos += str_len
 
