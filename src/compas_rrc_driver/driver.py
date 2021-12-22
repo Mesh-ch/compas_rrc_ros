@@ -20,8 +20,8 @@ except ImportError:
 
 CONNECTION_TIMEOUT = 5              # In seconds
 QUEUE_TIMEOUT = 5                   # In seconds
-RECONNECT_DELAY = 10                # In seconds
-SOCKET_SELECT_TIMEOUT = 10          # In seconds
+RECONNECT_DELAY = 1                # In seconds
+SOCKET_SELECT_TIMEOUT = 1          # In seconds
 QUEUE_MESSAGE_TOKEN = 0
 QUEUE_TERMINATION_TOKEN = -1
 QUEUE_RECONNECTION_TOKEN = -2

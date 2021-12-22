@@ -1,5 +1,5 @@
 <launch>
-    <arg name="robot_ip" default="192.168.1.10" doc="IP of the controller" />
+    <arg name="robot_ip" default="$(env WINDOWS_IP)" doc="IP of the controller" />
     <arg name="robot_streaming_port" default="30101" doc="Port of the streaming interface" />
     <arg name="robot_state_port" default="30201" doc="Port of the state interface" />
     <arg name="sequence_check_mode" default="none" doc="Define sequence ID check mode. Supported: none|all|incoming|outgoing" />
