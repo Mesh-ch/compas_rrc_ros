@@ -1,55 +1,40 @@
-# Container for running COMPAS RRC Driver
+# Container for running COMPAS RRC Driver on ROS 2
 #
 # Build:
-#  docker build --rm -f Dockerfile -t compasrrc/compas_rrc_driver .
+#   docker build --rm -f Dockerfile -t compasrrc/compas_rrc_driver:ros2 .
 #
 # Usage:
-#  docker pull compasrrc/compas_rrc_driver
+#   docker run --rm -it --net=host compasrrc/compas_rrc_driver:ros2
 
-FROM ros:kinetic-ros-core
+FROM ros:humble-ros-core
 LABEL maintainer="RRC Team <rrc@arch.ethz.ch>"
 
-SHELL ["/bin/bash","-c"]
-
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F42ED6FBAB17C654
-
-# Install packages
-RUN apt-get update && apt-get install -y \
-    # Basic utilities
-    iputils-ping \
-    # ROS bridge server and related packages
-    ros-${ROS_DISTRO}-rosbridge-server \
-    ros-${ROS_DISTRO}-tf2-web-republisher \
-    --no-install-recommends \
-    # Clear apt-cache to reduce image size
-    && rm -rf /var/lib/apt/lists/*
+SHELL ["/bin/bash", "-c"]
 
 # Build number
-ENV RRC_BUILD=1
+ENV RRC_BUILD=2
+ENV ROS_WS=/root/ros2_ws
 
-# Create local catkin workspace
-ENV CATKIN_WS=/root/catkin_ws
-# Add COMPAS RRC Driver package
-ADD . $CATKIN_WS/src/compas_rrc_driver
-WORKDIR $CATKIN_WS/src
-
-RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
-    # Reconfigure rosdep
-    && rm -rf /etc/ros/rosdep/sources.list.d/* \
-    && rosdep init && rosdep update \
-    # Update apt-get because its cache is always cleared after installs to keep image size down
-    && apt-get update \
-    && sudo apt-get install build-essential -y \
-    # Install dependencies
-    && cd $CATKIN_WS \
-    && rosdep install -y --from-paths . --ignore-src --rosdistro ${ROS_DISTRO} \
-    # Build catkin workspace
-    && ROS_LANG_DISABLE=geneus:genlisp:gennodejs catkin_make \
-    # Clear apt-cache to reduce image size
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    iputils-ping \
+    python3-colcon-common-extensions \
+    python3-rosdep \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ./.docker/ros_catkin_entrypoint.sh /
-RUN chmod +x /ros_catkin_entrypoint.sh
+# Add COMPAS RRC Driver package
+RUN mkdir -p ${ROS_WS}/src
+ADD . ${ROS_WS}/src/compas_rrc_driver
+WORKDIR ${ROS_WS}
 
-ENTRYPOINT ["/ros_catkin_entrypoint.sh"]
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
+    && if [ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then rosdep init; fi \
+    && rosdep update \
+    && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} \
+    && colcon build --packages-select compas_rrc_driver \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY ./.docker/ros2_colcon_entrypoint.sh /ros2_colcon_entrypoint.sh
+RUN chmod +x /ros2_colcon_entrypoint.sh
+
+ENTRYPOINT ["/ros2_colcon_entrypoint.sh"]
 CMD ["bash"]

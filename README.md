@@ -22,6 +22,19 @@ source install/setup.bash
 ros2 launch compas_rrc_driver bringup.launch.py robot_ip:=127.0.0.1 robot_streaming_port:=30101 robot_state_port:=30201
 ```
 
+### Docker (ROS 2)
+
+```bash
+docker build --rm -f Dockerfile -t compasrrc/compas_rrc_driver:ros2 .
+docker run --rm -it --net=host compasrrc/compas_rrc_driver:ros2
+```
+
+Inside the container:
+
+```bash
+ros2 launch compas_rrc_driver bringup.launch.py robot_ip:=127.0.0.1
+```
+
 For WSL scenarios:
 
 ```bash
