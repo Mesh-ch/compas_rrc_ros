@@ -47,7 +47,13 @@ ros2 launch compas_rrc_driver bringup_wsl.launch.py
 * `robot_streaming_port`: [*optional*, `default=30101`] TCP port of the streaming interface of the robot.
 * `robot_state_port`: [*optional*, `default=30201`] TCP port of the state interface of the robot.
 * `sequence_check_mode`: [*optional*, `default=none`] Sequence check mode, valid options: `none`, `all`, `incoming`, `outgoing`.
-* `namespace`: [*optional*, `default='rob1'`] Namespace for running multiple driver instances.
+* `namespace`: [*optional*, `default=''`] Namespace for running multiple driver instances.
+
+## Protocol version (ROS 2)
+
+The ROS 2 driver exposes a `get_protocol_version` service in its namespace
+(e.g. `/rob1/get_protocol_version`). The Python client uses this service when
+connecting via rosbridge.
 
 ## Notes on ROS 1 to ROS 2 migration
 

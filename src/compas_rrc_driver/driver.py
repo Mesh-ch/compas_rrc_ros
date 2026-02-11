@@ -12,6 +12,7 @@ from rclpy.executors import ExternalShutdownException
 from compas_rrc_driver.event_emitter import EventEmitterMixin
 from compas_rrc_driver.protocol import WireProtocol
 from compas_rrc_driver.topics import RobotMessageTopicProvider
+from compas_rrc_driver.srv import GetProtocolVersion
 
 try:
     import queue
@@ -384,6 +385,12 @@ def main():
     sequence_check_mode = node.get_parameter('sequence_check_mode').value
 
     node.declare_parameter('protocol_version', WireProtocol.VERSION)
+
+    def handle_protocol_version(_request, response):
+        response.version = int(WireProtocol.VERSION)
+        return response
+
+    node.create_service(GetProtocolVersion, 'get_protocol_version', handle_protocol_version)
 
     shutdown_reason = {'error': None}
 
