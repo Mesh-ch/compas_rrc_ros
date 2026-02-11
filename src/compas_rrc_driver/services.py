@@ -1,36 +1,37 @@
 import json
 import threading
 
-import rospy
-from compas_rrc_driver import srv
 from compas_rrc_driver.message import Message
+from compas_rrc_driver.srv import RobotMessageCommand
+from compas_rrc_driver.srv import RobotStringCommand
 
 
 class RobotBaseServiceProvider(object):
-    def __init__(self, streaming_interface, robot_state):
+    def __init__(self, node, streaming_interface, robot_state):
+        self.node = node
         self.streaming_interface = streaming_interface
         self.robot_state = robot_state
 
 
 class RobotMessageServiceProvider(RobotBaseServiceProvider):
-    def __init__(self, service_name, streaming_interface, robot_state):
-        super(RobotMessageServiceProvider, self).__init__(streaming_interface, robot_state)
-        self.service = rospy.Service(service_name, srv.RobotMessageCommand, self.handle_service_call)
+    def __init__(self, node, service_name, streaming_interface, robot_state):
+        super(RobotMessageServiceProvider, self).__init__(node, streaming_interface, robot_state)
+        self.service = self.node.create_service(RobotMessageCommand, service_name, self.handle_service_call)
 
-        rospy.logdebug('Started message command service...')
+        self.node.get_logger().debug('Started message command service...')
 
-    def handle_service_call(self, request):
+    def handle_service_call(self, request, response):
         raise NotImplementedError()
 
 
 class RobotStringServiceProvider(RobotBaseServiceProvider):
-    def __init__(self, service_name, streaming_interface, robot_state):
-        super(RobotStringServiceProvider, self).__init__(streaming_interface, robot_state)
-        self.service = rospy.Service(service_name, srv.RobotStringCommand, self.handle_service_call)
+    def __init__(self, node, service_name, streaming_interface, robot_state):
+        super(RobotStringServiceProvider, self).__init__(node, streaming_interface, robot_state)
+        self.service = self.node.create_service(RobotStringCommand, service_name, self.handle_service_call)
 
-        rospy.logdebug('Started string command service...')
+        self.node.get_logger().debug('Started string command service...')
 
-    def handle_service_call(self, request):
+    def handle_service_call(self, request, response):
         # String command handler assumes the string is JSON encoded
         command = json.loads(request.command)
 
@@ -39,10 +40,10 @@ class RobotStringServiceProvider(RobotBaseServiceProvider):
 
         def robot_response_received(response_message):
             try:
-                rospy.logdebug('Received response message: key=%s', response_message.key)
+                self.node.get_logger().debug('Received response message: key=%s' % response_message.key)
                 call_results['response'] = json.dumps(response_message.to_data())
             except Exception as e:
-                rospy.logerr('Error while receiving response message: %s', str(e))
+                self.node.get_logger().error('Error while receiving response message: %s' % str(e))
                 call_results['exception'] = str(e)
             finally:
                 wait_event.set()
@@ -63,7 +64,8 @@ class RobotStringServiceProvider(RobotBaseServiceProvider):
 
                 response_data = call_results['response']
 
-            return srv.RobotStringCommandResponse(response_data)
+            response.response = response_data
+            return response
 
         # Batched commands only return the last response
         elif 'instructions' in command:
@@ -81,7 +83,8 @@ class RobotStringServiceProvider(RobotBaseServiceProvider):
 
                     response_data = call_results['response']
 
-            return srv.RobotStringCommandResponse(response_data)
+            response.response = response_data
+            return response
 
         else:
             raise ValueError('Unexpected command')
