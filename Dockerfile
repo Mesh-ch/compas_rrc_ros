@@ -6,7 +6,7 @@
 # Usage:
 #   docker run --rm -it --net=host compasrrc/compas_rrc_driver:ros2
 
-FROM ros:humble-ros-core
+FROM ros:jazzy-ros-core
 LABEL maintainer="RRC Team <rrc@arch.ethz.ch>"
 
 SHELL ["/bin/bash", "-c"]
@@ -16,6 +16,8 @@ ENV RRC_BUILD=2
 ENV ROS_WS=/root/ros2_ws
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
     iputils-ping \
     python3-colcon-common-extensions \
     python3-rosdep \

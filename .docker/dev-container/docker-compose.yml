@@ -1,7 +1,9 @@
-version: '3.8'
 services:
   ros-rrc-dev:
-    image: compasrrc/compas_rrc_driver:ros2
+    image: compasrrc/compas_rrc_driver:2.0.0
+    build:
+      context: ../..
+      dockerfile: Dockerfile
     container_name: ros-rrc-dev
     environment:
       - RMW_IMPLEMENTATION=rmw_fastrtps_cpp
@@ -19,4 +21,4 @@ services:
       - robot_state_port:=30201
       - namespace:=rob1
     volumes:
-      - ./logs:/root/ros2_ws/logs
+      - ../../logs:/root/ros2_ws/logs

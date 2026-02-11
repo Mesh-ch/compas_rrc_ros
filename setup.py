@@ -5,7 +5,7 @@ package_name = 'compas_rrc_driver'
 
 setup(
     name=package_name,
-    version='1.2.0',
+    version='2.0.0',
     packages=find_packages(where='src'),
     package_dir={'': 'src'},
     data_files=[

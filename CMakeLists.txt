@@ -31,8 +31,10 @@ install(PROGRAMS
 )
 
 install(DIRECTORY
-  launch
-  DESTINATION share/${PROJECT_NAME}
+  launch/
+  DESTINATION share/${PROJECT_NAME}/launch
+  FILES_MATCHING
+  PATTERN "*.launch.py"
 )
 
 ament_export_dependencies(rosidl_default_runtime)

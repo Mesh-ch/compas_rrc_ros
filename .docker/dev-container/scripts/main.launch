@@ -1,3 +1,0 @@
-# Legacy ROS 1 launch file removed in ROS 2 migration.
-# Use:
-#   ros2 launch compas_rrc_driver bringup.launch.py robot_ip:=<ip>
