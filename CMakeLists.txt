@@ -22,6 +22,7 @@ install(DIRECTORY
 install(PROGRAMS
   src/compas_rrc_driver/driver.py
   DESTINATION lib/${PROJECT_NAME}
+  RENAME driver
 )
 
 install(DIRECTORY
