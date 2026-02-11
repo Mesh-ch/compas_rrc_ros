@@ -6,7 +6,6 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_python REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -15,7 +14,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/RobotStringCommand.srv"
 )
 
-ament_python_install_package(${PROJECT_NAME} PACKAGE_DIR src/${PROJECT_NAME})
+install(DIRECTORY
+  src/compas_rrc_driver
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 install(PROGRAMS
   src/compas_rrc_driver/driver.py
