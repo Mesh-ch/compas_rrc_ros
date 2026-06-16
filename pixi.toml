@@ -27,6 +27,7 @@ pytest = ">=8"
 flake8 = ">=7"
 isort = ">=5"
 autopep8 = ">=2"
+cbor2 = ">=5"
 
 # ROS 2 Jazzy base + rosbridge stack from RoboStack.
 ros-jazzy-ros-base = "*"

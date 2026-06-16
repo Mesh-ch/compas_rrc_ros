@@ -35,7 +35,7 @@ pixi run ros2 launch compas_rrc_driver bringup.launch.py robot_ip:=127.0.0.1
 Run rosbridge websocket server:
 
 ```bash
-pixi run ros2 launch rosbridge_server rosbridge_websocket_launch.xml unregister_timeout:=28800
+pixi run ros2 launch rosbridge_server rosbridge_websocket_launch.xml unregister_timeout:=28800.0
 ```
 
 If you want an interactive session for multiple ROS 2 commands, you can still
