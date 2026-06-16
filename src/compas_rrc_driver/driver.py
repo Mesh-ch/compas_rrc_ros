@@ -32,6 +32,30 @@ TIMING_START = dict()
 LOGGER = logging.getLogger('compas_rrc_driver')
 
 
+def _socket_debug_info(sock):
+    if not sock:
+        return 'socket=None'
+
+    details = []
+
+    try:
+        details.append('fd={}'.format(sock.fileno()))
+    except Exception:
+        details.append('fd=?')
+
+    try:
+        details.append('local={}:{}'.format(*sock.getsockname()))
+    except Exception:
+        details.append('local=?')
+
+    try:
+        details.append('peer={}:{}'.format(*sock.getpeername()))
+    except Exception:
+        details.append('peer=?')
+
+    return ', '.join(details)
+
+
 def _set_socket_opts(sock):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
     if hasattr(socket, 'TCP_KEEPIDLE'):
@@ -40,6 +64,21 @@ def _set_socket_opts(sock):
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
     if hasattr(socket, 'TCP_KEEPCNT'):
         sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 6)
+
+
+def _close_socket(sock):
+    if not sock:
+        return
+
+    try:
+        sock.shutdown(socket.SHUT_RDWR)
+    except Exception:
+        pass
+
+    try:
+        sock.close()
+    except Exception:
+        pass
 
 
 def _get_perf_counter():
@@ -126,7 +165,6 @@ class RobotStateConnection(EventEmitterMixin):
 
     def connect(self):
         self.is_running = True
-        self._connect_socket()
         self.thread = threading.Thread(target=self.socket_worker, name='robot_state_socket', daemon=True)
         self.thread.start()
 
@@ -140,17 +178,17 @@ class RobotStateConnection(EventEmitterMixin):
         try:
             self.node.get_logger().info('Robot state: Connecting socket %s:%d' % (self.host, self.port))
             self.socket = socket.create_connection((self.host, self.port), CONNECTION_TIMEOUT)
-            self.socket.settimeout(None)
+            self.socket.settimeout(SOCKET_SELECT_TIMEOUT)
             _set_socket_opts(self.socket)
-            self.node.get_logger().info('Robot state: Socket connected')
+            self.node.get_logger().info('Robot state: Socket connected (%s)' % _socket_debug_info(self.socket))
         except Exception:
             self.node.get_logger().error('Cannot connect robot state: %s:%d' % (self.host, self.port))
             raise
 
     def _disconnect_socket(self):
-        self.node.get_logger().info('Robot state: Disconnecting socket')
-        if self.socket:
-            self.socket.close()
+        self.node.get_logger().info('Robot state: Disconnecting socket (%s)' % _socket_debug_info(self.socket))
+        _close_socket(self.socket)
+        self.socket = None
 
     def socket_worker(self):
         self.node.get_logger().info('Robot state: Worker started')
@@ -160,6 +198,8 @@ class RobotStateConnection(EventEmitterMixin):
         while self.is_running:
             try:
                 if not self.socket:
+                    current_message.clear()
+                    version_already_checked = False
                     self._connect_socket()
 
                 current_message.add_perf_marker('select_before')
@@ -170,11 +210,19 @@ class RobotStateConnection(EventEmitterMixin):
                     raise socket.error('No readable socket available')
 
                 if len(readable) == 0:
+                    self.node.get_logger().debug(
+                        'Robot state: Select timeout while waiting for %s (header=%d, payload=%d, %s)'
+                        % (current_message.state, len(current_message.header), len(current_message.payload), _socket_debug_info(self.socket))
+                    )
                     raise socket.timeout('Socket selection timed out')
 
                 if current_message.state == 'recv_header':
                     current_message.add_perf_marker('recv_before')
                     header_chunk = readable[0].recv(current_message.remaining_header_bytes)
+                    self.node.get_logger().debug(
+                        'Robot state: Received header chunk len=%d remaining_header=%d (%s)'
+                        % (len(header_chunk), current_message.remaining_header_bytes, _socket_debug_info(self.socket))
+                    )
                     current_message.append_header_chunk(header_chunk)
 
                 if current_message.state == 'recv_payload':
@@ -185,12 +233,15 @@ class RobotStateConnection(EventEmitterMixin):
                         version_already_checked = True
 
                     chunk = readable[0].recv(current_message.remaining_payload_bytes)
+                    self.node.get_logger().debug(
+                        'Robot state: Received payload chunk len=%d remaining_payload_before_append=%d (%s)'
+                        % (len(chunk), current_message.remaining_payload_bytes, _socket_debug_info(self.socket))
+                    )
+
+                    if not chunk:
+                        raise socket.error('Socket broken, payload chunk empty')
 
                     try:
-                        if not chunk:
-                            self.node.get_logger().debug('Nothing read in chunk recv, continuing')
-                            continue
-
                         current_message.append_payload_chunk(chunk)
 
                         if current_message.state == 'message_complete':
@@ -220,9 +271,14 @@ class RobotStateConnection(EventEmitterMixin):
             except socket.timeout:
                 pass
             except socket.error as se:
-                self.node.get_logger().error('Socket error on robot state interface: %s' % str(se))
+                self.node.get_logger().error(
+                    'Socket error on robot state interface: %s (%s)' % (str(se), _socket_debug_info(self.socket))
+                )
                 if self.is_running:
+                    _close_socket(self.socket)
                     self.socket = None
+                    current_message.clear()
+                    version_already_checked = False
                     self.emit('socket_broken')
                     self.node.get_logger().warning('Robot state: Disconnection detected, waiting %d sec before reconnect...' % RECONNECT_DELAY)
                     time.sleep(RECONNECT_DELAY)
@@ -255,7 +311,6 @@ class StreamingInterfaceConnection(EventEmitterMixin):
 
     def connect(self):
         self.is_running = True
-        self._connect_socket()
         self.thread = threading.Thread(target=self.socket_worker, name='streaming_interface_socket', daemon=True)
         self.thread.start()
 
@@ -279,16 +334,17 @@ class StreamingInterfaceConnection(EventEmitterMixin):
         try:
             self.node.get_logger().info('Streaming interface: Connecting socket %s:%d' % (self.host, self.port))
             self.socket = socket.create_connection((self.host, self.port), CONNECTION_TIMEOUT)
+            self.socket.settimeout(CONNECTION_TIMEOUT)
             _set_socket_opts(self.socket)
-            self.node.get_logger().info('Streaming interface: Socket connected')
+            self.node.get_logger().info('Streaming interface: Socket connected (%s)' % _socket_debug_info(self.socket))
         except Exception:
             self.node.get_logger().error('Cannot connect streaming interface: %s:%d' % (self.host, self.port))
             raise
 
     def _disconnect_socket(self):
-        self.node.get_logger().info('Streaming interface: Disconnecting socket')
-        if self.socket:
-            self.socket.close()
+        self.node.get_logger().info('Streaming interface: Disconnecting socket (%s)' % _socket_debug_info(self.socket))
+        _close_socket(self.socket)
+        self.socket = None
 
     def execute_instruction(self, message):
         self.queue.put((QUEUE_MESSAGE_TOKEN, message))
@@ -311,12 +367,15 @@ class StreamingInterfaceConnection(EventEmitterMixin):
                         TIMING_START[message.sequence_id] = timing_incoming
 
                     wire_message = WireProtocol.serialize(message)
-                    _, writable, _ = select.select([], [self.socket], [])
+                    _, writable, _ = select.select([], [self.socket], [], SOCKET_SELECT_TIMEOUT)
 
                     if len(writable) == 0:
-                        raise Exception('No writable socket available')
+                        raise socket.error('No writable socket available')
 
-                    sent_bytes = writable[0].send(wire_message)
+                    writable[0].sendall(wire_message)
+                    self.node.get_logger().debug(
+                        'Streaming interface: Sent full frame len=%d (%s)' % (len(wire_message), _socket_debug_info(self.socket))
+                    )
 
                     if LOGGER.getEffectiveLevel() >= logging.DEBUG:
                         timing_sent = _get_perf_counter()
@@ -328,17 +387,17 @@ class StreamingInterfaceConnection(EventEmitterMixin):
                                 len(wire_message),
                             )
                         )
-
-                    if sent_bytes == 0:
-                        raise socket.error('Streaming socket connection broken')
-
                     self.emit('message_sent', message, wire_message)
                 elif token_type == QUEUE_TERMINATION_TOKEN:
                     self.node.get_logger().info('Signal to terminate, closing socket')
                     break
                 elif token_type == QUEUE_RECONNECTION_TOKEN:
                     reconnection_timestamp = message
-                    if last_successful_connect and reconnection_timestamp > last_successful_connect:
+                    self.node.get_logger().info(
+                        'Streaming interface: Reconnection token received ts=%s last_successful_connect=%s (%s)'
+                        % (reconnection_timestamp, last_successful_connect, _socket_debug_info(self.socket))
+                    )
+                    if last_successful_connect is None or reconnection_timestamp >= last_successful_connect:
                         raise socket.error('Reconnection requested at {}'.format(message))
                     self.node.get_logger().info(
                         'Ignoring stale reconnection request issued at {} because last successful connection was at {}'.format(
@@ -350,8 +409,10 @@ class StreamingInterfaceConnection(EventEmitterMixin):
                     raise Exception('Unknown token type')
             except queue.Empty:
                 pass
-            except socket.error:
+            except socket.error as se:
                 if self.is_running:
+                    self.node.get_logger().error('Streaming interface: Socket error %s (%s)' % (str(se), _socket_debug_info(self.socket)))
+                    _close_socket(self.socket)
                     self.socket = None
                     self.emit('socket_broken')
                     self.node.get_logger().warning('Streaming interface: Disconnection detected, waiting %d sec before reconnect...' % RECONNECT_DELAY)

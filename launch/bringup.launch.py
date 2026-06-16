@@ -5,7 +5,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    namespace_arg = DeclareLaunchArgument("namespace", default_value="rob1")
+    namespace_arg = DeclareLaunchArgument("namespace", default_value="")
     robot_ip_arg = DeclareLaunchArgument("robot_ip", default_value="127.0.0.1")
     robot_streaming_port_arg = DeclareLaunchArgument("robot_streaming_port", default_value="30101")
     robot_state_port_arg = DeclareLaunchArgument("robot_state_port", default_value="30201")
