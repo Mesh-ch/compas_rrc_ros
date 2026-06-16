@@ -100,3 +100,9 @@ ENV/
 
 # Visual Studio Code
 .vscode/
+
+# Pixi
+.pixi/
+/install
+/log
+/build

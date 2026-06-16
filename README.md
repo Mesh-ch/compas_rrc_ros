@@ -6,6 +6,47 @@
 
 ## ROS 2 Usage
 
+### Pixi-managed environment (recommended)
+
+This repository provides a `pixi.toml` with a ROS 2 Jazzy environment based on
+`conda-forge` and `robostack-jazzy`, including `ros-jazzy-rosbridge-suite`.
+
+Install Pixi and create the environment:
+
+```bash
+cd ~/ros2_ws/src
+git clone https://github.com/compas-rrc/compas_rrc_ros.git
+cd compas_rrc_ros
+pixi install
+```
+
+Build and run the package via Pixi tasks:
+
+```bash
+pixi run build
+```
+
+Run compas driver:
+
+```bash
+pixi run ros2 launch compas_rrc_driver bringup.launch.py robot_ip:=127.0.0.1
+```
+
+Run rosbridge websocket server:
+
+```bash
+pixi run ros2 launch rosbridge_server rosbridge_websocket_launch.xml unregister_timeout:=28800
+```
+
+If you want an interactive session for multiple ROS 2 commands, you can still
+open a Pixi shell:
+
+```bash
+pixi shell
+ros2 topic list
+ros2 service list
+```
+
 ### Build from source (colcon)
 
 ```bash
