@@ -73,13 +73,13 @@ docker run --rm -it --net=host compasrrc/compas_rrc_driver:ros2
 Inside the container:
 
 ```bash
-ros2 launch compas_rrc_driver bringup.launch.py robot_ip:=127.0.0.1
+pixi run ros2 launch compas_rrc_driver bringup.launch.py robot_ip:=127.0.0.1
 ```
 
 For WSL scenarios:
 
 ```bash
-ros2 launch compas_rrc_driver bringup_wsl.launch.py
+pixi run ros2 launch compas_rrc_driver bringup_wsl.launch.py
 ```
 
 ## Launch parameters

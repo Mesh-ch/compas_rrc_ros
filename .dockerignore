@@ -1,0 +1,9 @@
+# Exclude local build artifacts from Docker context
+build/
+install/
+log/
+.pixi/
+
+# Python cache
+__pycache__/
+*.pyc

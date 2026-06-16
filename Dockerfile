@@ -6,37 +6,28 @@
 # Usage:
 #   docker run --rm -it --net=host compasrrc/compas_rrc_driver:ros2
 
-FROM ros:jazzy-ros-core
+FROM ghcr.io/prefix-dev/pixi:latest
 LABEL maintainer="RRC Team <rrc@arch.ethz.ch>"
 
 SHELL ["/bin/bash", "-c"]
 
 # Build number
 ENV RRC_BUILD=2
-ENV ROS_WS=/root/ros2_ws
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     cmake \
     iputils-ping \
-    python3-colcon-common-extensions \
-    python3-rosdep \
     && rm -rf /var/lib/apt/lists/*
 
-# Add COMPAS RRC Driver package
-RUN mkdir -p ${ROS_WS}/src
-ADD . ${ROS_WS}/src/compas_rrc_driver
-WORKDIR ${ROS_WS}
+# Add repository and build in-place with Pixi
+WORKDIR /workspace
+ADD . /workspace
 
-RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
-    && if [ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then rosdep init; fi \
-    && rosdep update \
-    && rosdep install -y --from-paths src --ignore-src --rosdistro ${ROS_DISTRO} \
-    && colcon build --packages-select compas_rrc_driver \
+# Ensure host-generated ROS/colcon artifacts are not used in container builds.
+RUN rm -rf /workspace/build /workspace/install /workspace/log
+
+RUN COLCON_CURRENT_PREFIX=/workspace/install pixi install \
+    && COLCON_CURRENT_PREFIX=/workspace/install pixi run build \
     && rm -rf /var/lib/apt/lists/*
-
-COPY ./.docker/ros2_colcon_entrypoint.sh /ros2_colcon_entrypoint.sh
-RUN chmod +x /ros2_colcon_entrypoint.sh
-
-ENTRYPOINT ["/ros2_colcon_entrypoint.sh"]
 CMD ["bash"]
