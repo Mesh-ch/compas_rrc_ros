@@ -1,0 +1,45 @@
+[workspace]
+name = "compas_rrc_ros"
+version = "2.0.0"
+description = "COMPAS RRC ROS 2 Jazzy driver"
+channels = ["conda-forge", "robostack-jazzy"]
+platforms = ["linux-64"]
+
+[activation]
+scripts = ["install/setup.sh"]
+
+[tasks]
+build = "colcon build --base-paths . --packages-select compas_rrc_driver"
+test = "pytest"
+lint = "flake8 src tests && isort --check-only src"
+format = "isort src tests && autopep8 -i -r src tests"
+
+[dependencies]
+python = ">=3.11,<3.13"
+setuptools = ">=68"
+pip = ">=24"
+cmake = ">=3.26"
+compilers = ">=1.7"
+make = ">=4.3"
+pkg-config = ">=0.29"
+colcon-common-extensions = ">=0.3"
+pytest = ">=8"
+flake8 = ">=7"
+isort = ">=5"
+autopep8 = ">=2"
+cbor2 = ">=5"
+
+# ROS 2 Jazzy base + rosbridge stack from RoboStack.
+ros-jazzy-ros-base = "*"
+ros-jazzy-rosbridge-suite = "*"
+
+# Package build/runtime dependencies used by this repository.
+ros-jazzy-ament-cmake = "*"
+ros-jazzy-ament-cmake-python = "*"
+ros-jazzy-rosidl-default-generators = "*"
+ros-jazzy-rosidl-default-runtime = "*"
+ros-jazzy-rclpy = "*"
+ros-jazzy-std-msgs = "*"
+
+[pypi-dependencies]
+compas-rrc-driver = { path = ".", editable = true }

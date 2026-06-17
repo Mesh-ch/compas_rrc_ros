@@ -1,59 +1,96 @@
-# COMPAS RRC: ROS driver
+# COMPAS RRC: ROS 2 driver
 
 ![COMPAS RRC](images/compas_rrc.png)
 
-> ROS package for the COMPAS RRC driver for ABB robots.
+> ROS 2 package for the COMPAS RRC driver for ABB robots.
 
-## Usage
+## ROS 2 Usage
 
-### Docker
+### Pixi-managed environment (recommended)
 
-The easiest option to use the ROS package is via Docker:
+This repository provides a `pixi.toml` with a ROS 2 Jazzy environment based on
+`conda-forge` and `robostack-jazzy`, including `ros-jazzy-rosbridge-suite`.
 
-* Download the `docker-compose.yml` file to your computer
-* To use it with a virtual controller (ABB RobotStudio) on the same computer, no further changes are needed.
-* To use it with a real robot, update the robot's IP address in `docker-compose.yml` file (e.g. `robot_ip:=192.168.0.100`)
-* To use it in other scenarios, check the [examples](examples) folder.
-* Run docker compose up:
+Install Pixi and create the environment:
 
-      $ docker-compose up
+```bash
+cd ~/ros2_ws/src
+git clone https://github.com/compas-rrc/compas_rrc_ros.git
+cd compas_rrc_ros
+pixi install
+```
 
-* Start the robot controller(s).
+Build and run the package via Pixi tasks:
 
-### Linux
+```bash
+pixi run build
+```
 
-If you prefer to use a ROS installation on Linux:
+Run compas driver:
 
-* On the terminal, change to your catkin workspace source folder:
+```bash
+pixi run ros2 launch compas_rrc_driver bringup.launch.py robot_ip:=127.0.0.1
+```
 
-      $ cd ~/catkin_ws/src/
+Run rosbridge websocket server:
 
-* Clone this repository:
+```bash
+pixi run ros2 launch rosbridge_server rosbridge_websocket_launch.xml unregister_timeout:=28800.0
+```
 
-      $ git clone https://github.com/compas-rrc/compas_rrc_ros.git
+If you want an interactive session for multiple ROS 2 commands, you can still
+open a Pixi shell:
 
-* Build your workspace (e.g. using `catkin_make`):
+```bash
+pixi shell
+ros2 topic list
+ros2 service list
+```
 
-      $ cd ~/catkin_ws
-      $ catkin_make
+### Docker (ROS 2)
 
-* Source your workspace:
+For local development, use Pixi as described above. The Docker image intentionally uses a ROS/colcon build and runtime (without Pixi) to keep image size smaller.
 
-      $ source ~/catkin_ws/devel/setup.bash
+```bash
+docker build --rm -f Dockerfile -t compasrrc/compas_rrc_driver:ros2 .
+docker run --rm -it --net=host compasrrc/compas_rrc_driver:ros2
+```
 
-* Launch the driver using one of the provided launch files, e.g.:
+Inside the container:
 
-      $ roslaunch compas_rrc_driver bringup.launch robot_ip:=127.0.0.1 robot_streaming_port:=30101 robot_state_port:=30201
+```bash
+ros2 launch compas_rrc_driver bringup.launch.py robot_ip:=127.0.0.1
+```
 
-## Launch file parameters
+For WSL scenarios:
 
-The launch files have the following parameters available:
+```bash
+ros2 launch compas_rrc_driver bringup_wsl.launch.py
+```
+
+## Launch parameters
 
 * `robot_ip`: [*mandatory*] IP address of the robot.
 * `robot_streaming_port`: [*optional*, `default=30101`] TCP port of the streaming interface of the robot.
 * `robot_state_port`: [*optional*, `default=30201`] TCP port of the state interface of the robot.
-* `sequence_check_mode`: [*optional*, `default=none`] Sequence check mode, valid options are: `none`, `all`, `incoming`, `outgoing`
-* `namespace`: [*optional*, `default='/'`] Allows to define a namespace in order to connect to multiple robots on the same instance. Defaults to root (`/`).
+* `sequence_check_mode`: [*optional*, `default=none`] Sequence check mode, valid options: `none`, `all`, `incoming`, `outgoing`.
+* `namespace`: [*optional*, `default=''`] Namespace for running multiple driver instances.
+
+## Protocol version (ROS 2)
+
+The ROS 2 driver exposes a `get_protocol_version` service in its namespace
+(e.g. `/rob1/get_protocol_version`). The Python client uses this service when
+connecting via rosbridge.
+
+## Notes on ROS 1 to ROS 2 migration
+
+This package now uses the ROS 2 stack:
+
+* `rclpy` node API instead of `rospy`.
+* ROS 2 launch Python files (`*.launch.py`) instead of ROS 1 XML launch files.
+* `ament_cmake` + `rosidl` interface generation instead of Catkin-specific message generation.
+
+The `RobotMessage` topic and service interfaces remain in the package so existing higher-level command payloads stay compatible.
 
 ## License
 

@@ -1,56 +1,43 @@
-# Container for running COMPAS RRC Driver
+# Container for running COMPAS RRC Driver on ROS 2
 #
 # Build:
-#  docker build --rm -f Dockerfile -t compasrrc/compas_rrc_driver .
+#   docker build --rm -f Dockerfile -t compasrrc/compas_rrc_driver:ros2 .
 #
 # Usage:
-#  docker pull compasrrc/compas_rrc_driver
+#   docker run --rm -it --net=host compasrrc/compas_rrc_driver:ros2
 
-FROM ros:noetic-ros-core
-LABEL maintainer="RRC Team <rrc@arch.ethz.ch>"
+FROM ros:jazzy-ros-base AS builder
+LABEL maintainer="Martin Inauen <inauen@mesh.ch>"
 
-SHELL ["/bin/bash","-c"]
+SHELL ["/bin/bash", "-c"]
 
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys F42ED6FBAB17C654
-
-# Install packages
-RUN apt-get update && apt-get install -y \
-    # Basic utilities
-    iputils-ping \
-    # ROS bridge server and related packages
-    ros-${ROS_DISTRO}-rosbridge-server \
-    ros-${ROS_DISTRO}-tf2-web-republisher \
-    --no-install-recommends \
-    # Clear apt-cache to reduce image size
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3-colcon-common-extensions \
+    ros-jazzy-rosbridge-suite \
+    ros-jazzy-rosidl-default-generators \
     && rm -rf /var/lib/apt/lists/*
 
-# Build number
-ENV RRC_BUILD=1
+WORKDIR /root/ros2_ws
+COPY . /root/ros2_ws
 
-# Create local catkin workspace
-ENV CATKIN_WS=/root/catkin_ws
-# Add COMPAS RRC Driver package
-ADD . $CATKIN_WS/src/compas_rrc_driver
-WORKDIR $CATKIN_WS/src
+# Ensure host-generated ROS/colcon artifacts are not used in container builds.
+RUN rm -rf /root/ros2_ws/build /root/ros2_ws/install /root/ros2_ws/log \
+    && source /opt/ros/${ROS_DISTRO}/setup.bash \
+    && colcon build --base-paths . --packages-select compas_rrc_driver --merge-install
 
-RUN source /opt/ros/${ROS_DISTRO}/setup.bash \
-    # Update apt-get because its cache is always cleared after installs to keep image size down
-    && apt-get update \
-    && test $ROS_PYTHON_VERSION -eq 3 && ROSDEP_PKG="python3-rosdep" || ROSDEP_PKG="python-rosdep" \
-    ; apt-get install build-essential $ROSDEP_PKG -y  \
-    # Reconfigure rosdep
-    && rm -rf /etc/ros/rosdep/sources.list.d/* \
-    && rosdep init && rosdep update --include-eol-distros \
-    # Install dependencies
-    && cd $CATKIN_WS \
-    && rosdep install -y --from-paths . --ignore-src --rosdistro ${ROS_DISTRO} \
-    # Build catkin workspace
-    && ROS_LANG_DISABLE=geneus:genlisp:gennodejs catkin_make \
-    # Clear apt-cache to reduce image size
+FROM ros:jazzy-ros-base AS runtime
+
+SHELL ["/bin/bash", "-c"]
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ros-jazzy-rosbridge-suite \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ./.docker/ros_catkin_entrypoint.sh /
-RUN chmod +x /ros_catkin_entrypoint.sh
+WORKDIR /root/ros2_ws
+COPY --from=builder /root/ros2_ws/install /root/ros2_ws/install
+COPY .docker/ros2_colcon_entrypoint.sh /ros2_colcon_entrypoint.sh
 
-ENTRYPOINT ["/ros_catkin_entrypoint.sh"]
+RUN chmod +x /ros2_colcon_entrypoint.sh
+
+ENTRYPOINT ["/ros2_colcon_entrypoint.sh"]
 CMD ["bash"]

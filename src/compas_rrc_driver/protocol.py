@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import struct
 import time
-from compas_rrc_driver import msg
+from compas_rrc_driver.msg import RobotMessage
 
 __all__ = [
     'WireProtocol',
@@ -138,7 +138,7 @@ class WireProtocolVersion1(object):
         float_format = '%df' % float_value_count
         float_values = struct.unpack(cls.BYTE_ORDER + float_format, payload[start_pos:])
 
-        return msg.RobotMessage(instruction=instruction,
+        return RobotMessage(instruction=instruction,
                                 sequence_id=sequence_id,
                                 exec_level=exec_level,
                                 feedback_level=feedback_level,
