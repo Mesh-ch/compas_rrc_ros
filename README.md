@@ -47,23 +47,9 @@ ros2 topic list
 ros2 service list
 ```
 
-### Build from source (colcon)
-
-```bash
-cd ~/ros2_ws/src
-git clone https://github.com/compas-rrc/compas_rrc_ros.git
-cd ~/ros2_ws
-colcon build --packages-select compas_rrc_driver
-source install/setup.bash
-```
-
-### Launch driver
-
-```bash
-ros2 launch compas_rrc_driver bringup.launch.py robot_ip:=127.0.0.1 robot_streaming_port:=30101 robot_state_port:=30201
-```
-
 ### Docker (ROS 2)
+
+For local development, use Pixi as described above. The Docker image intentionally uses a ROS/colcon build and runtime (without Pixi) to keep image size smaller.
 
 ```bash
 docker build --rm -f Dockerfile -t compasrrc/compas_rrc_driver:ros2 .
@@ -73,13 +59,13 @@ docker run --rm -it --net=host compasrrc/compas_rrc_driver:ros2
 Inside the container:
 
 ```bash
-pixi run ros2 launch compas_rrc_driver bringup.launch.py robot_ip:=127.0.0.1
+ros2 launch compas_rrc_driver bringup.launch.py robot_ip:=127.0.0.1
 ```
 
 For WSL scenarios:
 
 ```bash
-pixi run ros2 launch compas_rrc_driver bringup_wsl.launch.py
+ros2 launch compas_rrc_driver bringup_wsl.launch.py
 ```
 
 ## Launch parameters
