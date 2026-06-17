@@ -7,7 +7,7 @@
 #   docker run --rm -it --net=host compasrrc/compas_rrc_driver:ros2
 
 FROM ros:jazzy-ros-base AS builder
-LABEL maintainer="Martin Inauen <inauen@mesh.ch>""
+LABEL maintainer="Martin Inauen <inauen@mesh.ch>"
 
 SHELL ["/bin/bash", "-c"]
 
