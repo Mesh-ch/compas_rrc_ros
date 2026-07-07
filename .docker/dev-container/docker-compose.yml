@@ -12,7 +12,7 @@ services:
       - ROBOT_IP=${ROBOT_IP:-host.docker.internal}
       - ROBOT_STREAMING_PORT=${ROBOT_STREAMING_PORT:-30101}
       - ROBOT_STATE_PORT=${ROBOT_STATE_PORT:-30201}
-      - ROS_NAMESPACE=${ROS_NAMESPACE:-/rob1}
+      - ROS_NAMESPACE=${ROS_NAMESPACE}
     ports:
       - "9090:9090"
     extra_hosts:
@@ -24,4 +24,4 @@ services:
       - robot_ip:=${ROBOT_IP:-host.docker.internal}
       - robot_streaming_port:=${ROBOT_STREAMING_PORT:-30101}
       - robot_state_port:=${ROBOT_STATE_PORT:-30201}
-      - namespace:=${ROS_NAMESPACE:-/rob1}
+      - namespace:=${ROS_NAMESPACE}

@@ -19,6 +19,6 @@
       <!-- <arg name="bind_ip" value="0.0.0.0" /> -->
       <arg name="robot_streaming_port" value="30101" />
       <arg name="robot_state_port" value="30201" />
-      <arg name="namespace" value="/rob1" />
+      <arg name="namespace" value="/" />
   </include>
 </launch>
